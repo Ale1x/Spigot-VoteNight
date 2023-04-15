@@ -1,0 +1,12 @@
+inventario:
+  titolo: '&9Vota giorno o notte'
+  dimensioni: 9
+  items:
+    yes:
+      materiale: DIAMOND_BLOCK
+      display-name: '&aSi'
+      slot: 3
+    no:
+      materiale: REDSTONE_BLOCK
+      display-name: '&cNo'
+      slot: 5

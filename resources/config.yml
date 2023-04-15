@@ -1,0 +1,20 @@
+prefix: "&9Votazione Notte &8\u00BB "
+messaggio-inizio-votazione: '&aVotazione avviata! Gli utenti hanno 120 secondi per votare.'
+messaggio-no-permessi: '&cNon hai il permesso per utilizzare questo comando.'
+messaggio-no-votazione: '&cNon c''e'' una votazione in corso.'
+messaggio-votato-gia: '&eHai gia'' votato!'
+messaggio-votato-si: '&aHai votato ''Si''. Grazie per aver votato!'
+messaggio-votato-no: '&cHai votato ''No''. Grazie per aver votato!'
+messaggio-giorno: '&aLa votazione e'' terminata. Il giorno stato impostato!'
+messaggio-notte: '&cLa votazione e'' terminata. La notte continua.'
+durata-votazione: 120 #espressa in secondi
+percentuale-richiesta: 50 # >=
+messaggio-reload: '&aPlugin ricaricato!'
+mondo-da-controllare: 'world' # Il nome del mondo in cui controllare i tick (se >= si avvia la votazione)
+tick-da-controllare: 12000 # Numero di tick dopo i quali avviare la votazione (12000 tick = mezzogiorno nel gioco)
+tick-da-impostare: 1000
+vote-cooldown-ticks: 6000
+permesso-reload: 'votazionenotte.reload'
+permesso-votazione: 'votazionenotte.startvote'
+mondi-da-cambiare:
+  - world

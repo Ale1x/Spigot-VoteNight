@@ -1,0 +1,17 @@
+name: VoteNight
+main: it.ale1x.votenight.VoteNight
+version: 0.2
+description: Un plugin per avviare votazioni per cambiare la notte in giorno.
+commands:
+  vota-notte-poll:
+    description: Avvia una votazione per passare dalla notte al giorno.
+    aliases: [avvia-voto]
+    usage: /<command>
+  vota-notte:
+    description: Apri l'interfaccia utente per votare.
+    aliases: []
+    usage: /<command>
+  votanotte-reload:
+    description: Ricarica la configurazione del plugin.
+    aliases: []
+    usage: /<command>
