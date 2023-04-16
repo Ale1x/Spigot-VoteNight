@@ -19,10 +19,10 @@ public class VoteNight extends JavaPlugin {
         System.out.println("[Votazione Notte] Attivato!");
 
         saveDefaultConfig();
-        this.config = getConfig();
-        this.guiConfig = loadCustomConfig("gui.yml");
+        config = getConfig();
+        guiConfig = loadCustomConfig("gui.yml");
 
-        this.voteManager = new VoteManager(this, config, guiConfig);
+        voteManager = new VoteManager(this, config, guiConfig);
 
         registerCommands();
     }
@@ -39,12 +39,24 @@ public class VoteNight extends JavaPlugin {
     }
 
     private void registerCommands() {
+        registerVotazioneNottePollCmd();
+        registerVotazioneNotteCmd();
+        registerVotazioneNotteReloadCmd();
+    }
+
+    private void registerVotazioneNottePollCmd() {
         PluginCommand votazioneNotteCmd = getCommand("vota-notte-poll");
-        votazioneNotteCmd.setExecutor(new VotazioneNotteCommand(this, this.voteManager, this.config));
+        votazioneNotteCmd.setExecutor(new VotazioneNotteCommand(this, voteManager, config));
+    }
+
+    private void registerVotazioneNotteCmd() {
         PluginCommand votaCmd = getCommand("vota-notte");
-        votaCmd.setExecutor(new VotaCommand(this, this.voteManager, this.config));
+        votaCmd.setExecutor(new VotaCommand(this, voteManager, config));
+    }
+
+    private void registerVotazioneNotteReloadCmd() {
         PluginCommand reloadCmd = getCommand("votanotte-reload");
-        reloadCmd.setExecutor(new VotazioneReloadCommand(this, this.config));
+        reloadCmd.setExecutor(new VotazioneReloadCommand(this, config));
     }
 
     public VoteManager getVoteManager() {
