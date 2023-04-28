@@ -1,7 +1,8 @@
 package it.ale1x.votenight;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.Objects;
+
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -20,7 +21,7 @@ public class VoteNight extends JavaPlugin {
 
         saveDefaultConfig();
         config = getConfig();
-        guiConfig = loadCustomConfig("gui.yml");
+        guiConfig = loadCustomConfig();
 
         voteManager = new VoteManager(this, config, guiConfig);
 
@@ -31,11 +32,15 @@ public class VoteNight extends JavaPlugin {
         System.out.println("[Votazione Notte] Disattivato!");
     }
 
-    protected FileConfiguration loadCustomConfig(String filename) {
-        File file = new File(getDataFolder(), filename);
+
+    /**
+     *
+     */
+    protected YamlConfiguration loadCustomConfig() {
+        File file = new File(getDataFolder(), "gui.yml");
         if (!file.exists())
-            saveResource(filename, false);
-        return (FileConfiguration)YamlConfiguration.loadConfiguration(file);
+            saveResource("gui.yml", false);
+        return YamlConfiguration.loadConfiguration(file);
     }
 
     private void registerCommands() {
@@ -46,12 +51,14 @@ public class VoteNight extends JavaPlugin {
 
     private void registerVotazioneNottePollCmd() {
         PluginCommand votazioneNotteCmd = getCommand("vota-notte-poll");
-        votazioneNotteCmd.setExecutor(new VotazioneNotteCommand(this, voteManager, config));
+        if (votazioneNotteCmd != null) {
+            Objects.requireNonNull(votazioneNotteCmd).setExecutor(new VotazioneNotteCommand(this, voteManager, config));
+        }
     }
 
     private void registerVotazioneNotteCmd() {
         PluginCommand votaCmd = getCommand("vota-notte");
-        votaCmd.setExecutor(new VotaCommand(this, voteManager, config));
+        votaCmd.setExecutor(new VotaCommand(voteManager));
     }
 
     private void registerVotazioneNotteReloadCmd() {

@@ -1,9 +1,7 @@
 package it.ale1x.votenight;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -19,81 +17,99 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 
 public class VoteManager implements Listener {
+
     private final VoteNight plugin;
-    private boolean votingInProgress;
-    private int yesVotes;
-    private int noVotes;
-    private int totalVotes;
-    private final Map<UUID, Boolean> playersVoted = new HashMap<>();
-    private Inventory voteInventory;
-    private FileConfiguration config;
+    private final FileConfiguration config;
     private FileConfiguration guiConfig;
+    private final Map<UUID, Boolean> playersVoted;
+    private final Inventory voteInventory;
     private final String worldName;
     private final int checkVoteTicks;
     private final int voteCooldownTicks;
 
-    public VoteManager(VoteNight plugin, FileConfiguration config, FileConfiguration guiConfig) {
+    private boolean votingInProgress;
+    private int yesVotes;
+    private int totalVotes;
 
+    public VoteManager(VoteNight plugin, FileConfiguration config, FileConfiguration guiConfig) {
         this.plugin = plugin;
         this.config = config;
         this.guiConfig = guiConfig;
-        this.yesVotes = 0;
-        this.noVotes = 0;
-        this.totalVotes = 0;
-        votingInProgress = false;
-        this.votingInProgress = false;
+        this.playersVoted = new HashMap<>();
+        this.voteInventory = createVoteInventory();
         this.worldName = config.getString("mondo-da-controllare");
         this.checkVoteTicks = config.getInt("tick-da-controllare", 0);
         this.voteCooldownTicks = config.getInt("vote-cooldown-ticks", 6000);
 
-        plugin.getServer().getPluginManager().registerEvents(this, (Plugin)plugin);
-        createVoteInventory();
-
-        if (checkVoteTicks > 0 && worldName != null) {
-            startCheckVoteTask();
-        }
-
+        plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
+        startCheckVoteTask();
     }
-
 
     public void startVote(int durationSeconds) {
         if (!votingInProgress) {
-            votingInProgress = true;
-            yesVotes = 0;
-            noVotes = 0;
-            totalVotes = 0;
-            playersVoted.clear();
-
+            initializeVoting();
             broadcastMessage(config.getString("prefix") + config.getString("messaggio-inizio-votazione"));
+            schedulePollEnd(durationSeconds);
+        }
+    }
 
-            peformPoll(durationSeconds);
+    private void initializeVoting() {
+        votingInProgress = true;
+        yesVotes = 0;
+        totalVotes = 0;
+        playersVoted.clear();
+    }
 
+    private void schedulePollEnd(int durationSeconds) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                endVoting();
+            }
+        }.runTaskLater((Plugin) plugin, (durationSeconds * 20L));
+    }
+
+    private void endVoting() {
+        votingInProgress = false;
+        double requiredPercentage = config.getDouble("percentuale-richiesta");
+
+        if (totalVotes == 0) {
+            totalVotes = 1;
+        }
+
+        double yesPercentage = (double) yesVotes / totalVotes * 100.0D;
+        if (yesPercentage >= requiredPercentage) {
+            performTimeChange();
+        } else {
+            broadcastMessage(config.getString("prefix") + config.getString("messaggio-notte"));
         }
     }
 
     private void startCheckVoteTask() {
-        BukkitTask checkVoteTask = new BukkitRunnable() {
+        new BukkitRunnable() {
             @Override
             public void run() {
-                World world = Bukkit.getWorld(worldName);
+                World world = Bukkit.getWorld(Objects.requireNonNull(worldName));
                 if (world != null && world.getTime() >= checkVoteTicks && !votingInProgress) {
                     int duration = config.getInt("durata-votazione");
                     startVote(duration);
                     this.cancel();
-                    (new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            startCheckVoteTask();
-                        }
-                    }).runTaskLater(plugin, voteCooldownTicks);
+                    scheduleCheckVoteTaskRestart();
                 }
             }
-        }.runTaskTimer(plugin, 0, 20); // Controlla ogni secondo (20 tick)
+        }.runTaskTimer(plugin, 0, 20);
     }
 
+    private void scheduleCheckVoteTaskRestart() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                startCheckVoteTask();
+            }
+        }.runTaskLater(plugin, voteCooldownTicks);
+    }
     public void openVoteGUI(Player player) {
         if (votingInProgress) {
             player.openInventory(voteInventory);
@@ -102,19 +118,22 @@ public class VoteManager implements Listener {
         }
     }
 
-    private void createVoteInventory() {
-        String inventoryTitle = ChatColor.translateAlternateColorCodes('&', guiConfig.getString("inventario.titolo"));
+    private Inventory createVoteInventory() {
+        String inventoryTitle = ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(guiConfig.getString("inventario.titolo")));
         int inventorySize = guiConfig.getInt("inventario.dimensioni");
-        voteInventory = Bukkit.createInventory(null, inventorySize, inventoryTitle);
+        Inventory inventory = Bukkit.createInventory(null, inventorySize, inventoryTitle);
         ConfigurationSection itemsSection = guiConfig.getConfigurationSection("inventario.items");
-        for (String key : itemsSection.getKeys(false)) {
-            String materialName = itemsSection.getString(key + ".materiale");
+        for (String key : Objects.requireNonNull(itemsSection).getKeys(false)) {
+            String materialName = itemsSection.getString(key +
+                    ".materiale");
             String displayName = itemsSection.getString(key + ".display-name");
             int slot = itemsSection.getInt(key + ".slot");
-            ItemStack item = createCustomItem(materialName, displayName);
+            ItemStack item = createCustomItem(materialName,
+                    displayName);
             if (item != null)
-                voteInventory.setItem(slot, item);
+                inventory.setItem(slot, item);
         }
+        return inventory;
     }
 
     private ItemStack createCustomItem(String materialName, String displayName) {
@@ -132,69 +151,43 @@ public class VoteManager implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-
-        int yesSlot = guiConfig.getInt("inventario.items.yes.slot");
-        int noSlot = guiConfig.getInt("inventario.items.no.slot");
-
         if (event.getInventory().equals(voteInventory)) {
             event.setCancelled(true);
-            Player player = (Player)event.getWhoClicked();
+            Player player = (Player) event.getWhoClicked();
             UUID playerUUID = player.getUniqueId();
             if (!playersVoted.containsKey(playerUUID)) {
-                int slot = event.getRawSlot();
-                if (slot == yesSlot) {
-                    playerVotedYes(player);
-                    playersVoted.put(playerUUID, true);
-                } else if (slot == noSlot) {
-                    playerVotedNo(player);
-                    playersVoted.put(playerUUID, false);
-                }
+                processVote(player, event.getRawSlot());
+                player.closeInventory();
             } else {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("prefix") + config.getString("messaggio-votato-gia")));
+                player.closeInventory();
             }
-            player.closeInventory();
         }
     }
 
-    private void playerVotedYes(Player p) {
-        yesVotes++;
-        totalVotes++;
-        p.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("prefix") + config.getString("messaggio-votato-si")));
-    }
+    private void processVote(Player player, int slot) {
+        int yesSlot = guiConfig.getInt("inventario.items.yes.slot");
+        int noSlot = guiConfig.getInt("inventario.items.no.slot");
+        UUID playerUUID = player.getUniqueId();
 
-    private void playerVotedNo(Player p) {
-        noVotes++;
-        totalVotes++;
-        p.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("prefix") + config.getString("messaggio-votato-no")));
+        if (slot == yesSlot) {
+            yesVotes++;
+            totalVotes++;
+            playersVoted.put(playerUUID, true);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("prefix") + config.getString("messaggio-votato-si")));
+        } else if (slot == noSlot) {
+            totalVotes++;
+            playersVoted.put(playerUUID, false);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("prefix") + config.getString("messaggio-votato-no")));
+        }
     }
 
     public void reloadConfig() {
-        this.guiConfig = plugin.loadCustomConfig("gui.yml");
+        guiConfig = plugin.loadCustomConfig();
         createVoteInventory();
     }
 
-    private void peformPoll(int durationSeconds) {
-
-        (new BukkitRunnable() {
-            public void run() {
-                votingInProgress = false;
-                double requiredPercentage = config.getDouble("percentuale-richiesta");
-
-                if(totalVotes == 0) {
-                    totalVotes = 1;
-                }
-
-                double yesPercentage = (double) yesVotes / totalVotes * 100.0D;
-                if (yesPercentage >= requiredPercentage)
-                    performTimeChange();
-                else
-                    broadcastMessage(config.getString("prefix") + config.getString("messaggio-notte"));
-            }
-        }).runTaskLater((Plugin)plugin, (durationSeconds * 20L));
-    }
-
     private void performTimeChange() {
-
         List<String> worldsToChange = config.getStringList("mondi-da-cambiare");
         for (String worldName : worldsToChange) {
             World world = Bukkit.getWorld(worldName);
@@ -207,9 +200,10 @@ public class VoteManager implements Listener {
 
     private void broadcastMessage(String message) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if(player != null) {
+            if (player != null) {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
             }
         }
     }
 }
+
