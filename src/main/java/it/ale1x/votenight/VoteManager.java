@@ -15,7 +15,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class VoteManager implements Listener {
@@ -43,7 +42,7 @@ public class VoteManager implements Listener {
         this.checkVoteTicks = config.getInt("tick-da-controllare", 0);
         this.voteCooldownTicks = config.getInt("vote-cooldown-ticks", 6000);
 
-        plugin.getServer().getPluginManager().registerEvents(this, (Plugin) plugin);
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
         startCheckVoteTask();
     }
 
@@ -68,7 +67,7 @@ public class VoteManager implements Listener {
             public void run() {
                 endVoting();
             }
-        }.runTaskLater((Plugin) plugin, (durationSeconds * 20L));
+        }.runTaskLater(plugin, (durationSeconds * 20L));
     }
 
     private void endVoting() {

@@ -13,7 +13,6 @@ public class VoteNight extends JavaPlugin {
 
     private FileConfiguration config;
 
-    private FileConfiguration guiConfig;
 
     public void onEnable() {
 
@@ -21,7 +20,7 @@ public class VoteNight extends JavaPlugin {
 
         saveDefaultConfig();
         config = getConfig();
-        guiConfig = loadCustomConfig();
+        FileConfiguration guiConfig = loadCustomConfig();
 
         voteManager = new VoteManager(this, config, guiConfig);
 
@@ -58,12 +57,12 @@ public class VoteNight extends JavaPlugin {
 
     private void registerVotazioneNotteCmd() {
         PluginCommand votaCmd = getCommand("vota-notte");
-        votaCmd.setExecutor(new VotaCommand(voteManager));
+        Objects.requireNonNull(votaCmd).setExecutor(new VotaCommand(voteManager));
     }
 
     private void registerVotazioneNotteReloadCmd() {
         PluginCommand reloadCmd = getCommand("votanotte-reload");
-        reloadCmd.setExecutor(new VotazioneReloadCommand(this, config));
+        Objects.requireNonNull(reloadCmd).setExecutor(new VotazioneReloadCommand(this, config));
     }
 
     public VoteManager getVoteManager() {
